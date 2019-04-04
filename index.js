@@ -4,7 +4,8 @@ const bodyParser = require('koa-bodyparser');
 const fs = require('fs')
 const cors = require('kcors');
 const storage = require('node-persist');
-require('./Math.uuid');
+const uuidv4 = require('uuid/v4');
+var _ = require('lodash');
 
 const app = new Koa();
 const router = new Router();
@@ -13,12 +14,13 @@ storage.initSync();
 
 router.post('/drafts', async function (ctx) {
   const drafts = await storage.getItem('drafts') || []
-  const id = Math.uuid()
+  const id = uuidv4();
+  const {template, script, style} = ctx.request.body
   const draft = {
-    'id':id,
-    'template':ctx.request.body.template,
-    'script':ctx.request.body.script,
-    'style':ctx.request.body.style
+    id,
+    template,
+    script,
+    style
   }
   drafts.push(draft)
   await storage.setItem('drafts', drafts);
@@ -29,11 +31,9 @@ router.post('/drafts', async function (ctx) {
 router.get('/drafts/:id', async function (ctx) {
   const drafts = await storage.getItem('drafts') || []
   const id = ctx.params.id
-  ctx.body = 'no draft found'
-  for (var i = 0; i < drafts.length; i++) {
-    if(drafts[i].id === id){
-      ctx.body = drafts[i]
-    }
+  ctx.body = _.find(drafts,{id})
+  if(ctx.body === undefined){
+    throw new Error('no draft found');
   }
 });
 
